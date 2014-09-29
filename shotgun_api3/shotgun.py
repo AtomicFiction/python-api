@@ -47,6 +47,7 @@ import urllib
 import urllib2      # used for image upload
 import urlparse
 import shutil       # used for attachment download
+import math
 
 # use relative import for versions >=2.5 and package import for python versions <2.5
 if (sys.version_info[0] > 2) or (sys.version_info[0] == 2 and sys.version_info[1] >= 6):
@@ -65,13 +66,14 @@ LOG.setLevel(logging.WARN)
 
 SG_TIMEZONE = SgTimezone()
 
-
 try:
     import ssl
     NO_SSL_VALIDATION = False
 except ImportError:
     LOG.debug("ssl not found, disabling certificate validation")
     NO_SSL_VALIDATION = True
+
+MAX_RETRIES = 5
 
 # ----------------------------------------------------------------------------
 # Version
@@ -1533,17 +1535,34 @@ class Shotgun(object):
             "content-type" : "application/json; charset=utf-8",
             "connection" : "keep-alive"
         }
-        http_status, resp_headers, body = self._make_call("POST",
-            self.config.api_path, encoded_payload, req_headers)
-        LOG.debug("Completed rpc call to %s" % (method))
-        try:
-            self._parse_http_status(http_status)
-        except ProtocolError, e:
-            e.headers = resp_headers
-            # 403 is returned with custom error page when api access is blocked
-            if e.errcode == 403:
-                e.errmsg += ": %s" % body
-            raise
+        
+        # Atomic Fiction fix: we get the 503 error way too often... 
+        retry_count = 0
+        while True:
+            
+            http_status, resp_headers, body = self._make_call("POST",
+                self.config.api_path, encoded_payload, req_headers)
+            
+            LOG.debug("Completed rpc call to %s" % (method))
+            
+            try:
+                self._parse_http_status(http_status)
+                break
+            except ProtocolError, e:
+                
+                if e.errcode == 503:
+                    if retry_count < MAX_RETRIES:
+                        retry_count += 1
+                        time.sleep(math.pow(2, retry_count))
+                        continue
+                    else:
+                        e.errmsg += ": Retried %d times" % retry_count
+                        
+                e.headers = resp_headers
+                # 403 is returned with custom error page when api access is blocked
+                if e.errcode == 403:
+                    e.errmsg += ": %s" % body
+                raise
 
         response = self._decode_response(resp_headers, body)
         self._response_errors(response)
@@ -1685,9 +1704,11 @@ class Shotgun(object):
         errmsg = status[1]
 
         if status[0] >= 300:
+            
             headers = "HTTP error from server"
             if status[0] == 503:
                 errmsg = "Shotgun is currently down for maintenance. Please try again later."
+                
             raise ProtocolError(self.config.server,
                                 error_code,
                                 errmsg,
