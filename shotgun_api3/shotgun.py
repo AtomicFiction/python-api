@@ -83,7 +83,20 @@ have a self-signed internal certificate that isn't included in our certificate b
 not require the added security provided by enforcing this.
 """
 try:
-    import ssl        
+    import platform
+    if platform.system() == 'Darwin':
+        import ssl
+        from functools import wraps
+        def sslwrap(func):
+            @wraps(func)
+            def bar(*args, **kw):
+                kw['ssl_version'] = ssl.PROTOCOL_TLSv1
+                return func(*args, **kw)
+            return bar
+
+        ssl.wrap_socket = sslwrap(ssl.wrap_socket)
+
+    import ssl
 except ImportError, e:
     if "SHOTGUN_FORCE_CERTIFICATE_VALIDATION" in os.environ:
         raise ImportError("%s. SHOTGUN_FORCE_CERTIFICATE_VALIDATION environment variable prevents "
