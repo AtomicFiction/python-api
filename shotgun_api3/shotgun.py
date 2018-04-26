@@ -48,13 +48,6 @@ import urlparse
 import shutil       # used for attachment download
 import math
 
-# AF: For db call logging
-import getpass
-import inspect
-import json
-import psutil
-import socket
-
 # use relative import for versions >=2.5 and package import for python versions <2.5
 if (sys.version_info[0] > 2) or (sys.version_info[0] == 2 and sys.version_info[1] >= 6):
     from sg_26 import *
@@ -3077,7 +3070,18 @@ class Shotgun(object):
             if not os.environ.get('AF_LOG_SG_CALLS'):
                 return call_rpc_func(self, method, params, **kwargs)
 
-            import afpipe.influxdb
+            try:
+                import getpass
+                import inspect
+                import json
+                import psutil
+                import socket
+                import afpipe.influxdb
+
+            # machine doesn't support one of the modules we need for logging,
+            # so just give up
+            except:
+                return call_rpc_func(self, method, params, **kwargs)
 
             afpipe.influxdb.LOG.setLevel(logging.WARN)
             INFLUX = afpipe.influxdb.Influx()
