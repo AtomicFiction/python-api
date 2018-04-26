@@ -50,6 +50,7 @@ import math
 
 # AF: For db call logging
 import getpass
+import inspect
 import json
 import psutil
 import socket
@@ -3076,6 +3077,10 @@ class Shotgun(object):
             """Attempt to log a database call to Influx for graphing.
             """
 
+            # db logging is turned off, so just go ahead and run the API function
+            if not os.environ.get('AF_LOG_SG_CALLS'):
+                return call_rpc_func(self, method, params, **kwargs)
+
             # wrap everything in one big try/except; we never want to prevent the
             # user from making a database call just because our attempts to log
             # to influx failed
@@ -3120,6 +3125,14 @@ class Shotgun(object):
                     site = 'unknown'
                     user = 'unknown'
 
+                # attempt to figure out which module is this call is
+                # originating from
+                try:
+                    outermost_frame = inspect.stack()[-1]
+                    module = inspect.getmodulename(outermost_frame[1])
+                except:
+                    module = 'unknown'
+
                 tags = {}
 
                 tags['user'] = user
@@ -3129,6 +3142,7 @@ class Shotgun(object):
                 tags['process_name'] = process_name
                 tags['tractor_jid'] = tractor_jid
                 tags['site'] = site
+                tags['module'] = module
 
                 # TODO: Some fields aren't formatting properly for influx to
                 # accept them (like tractor title, filters, and return fields)
