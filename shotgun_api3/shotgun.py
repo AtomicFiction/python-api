@@ -54,10 +54,6 @@ import inspect
 import json
 import psutil
 import socket
-import afpipe.influxdb
-
-afpipe.influxdb.LOG.setLevel(logging.WARN)
-INFLUX = afpipe.influxdb.Influx()
 
 # use relative import for versions >=2.5 and package import for python versions <2.5
 if (sys.version_info[0] > 2) or (sys.version_info[0] == 2 and sys.version_info[1] >= 6):
@@ -3080,6 +3076,11 @@ class Shotgun(object):
             # db logging is turned off, so just go ahead and run the API function
             if not os.environ.get('AF_LOG_SG_CALLS'):
                 return call_rpc_func(self, method, params, **kwargs)
+
+            import afpipe.influxdb
+
+            afpipe.influxdb.LOG.setLevel(logging.WARN)
+            INFLUX = afpipe.influxdb.Influx()
 
             # wrap everything in one big try/except; we never want to prevent the
             # user from making a database call just because our attempts to log
