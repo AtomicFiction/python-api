@@ -3070,6 +3070,8 @@ class Shotgun(object):
             if not os.environ.get('AF_LOG_SG_CALLS'):
                 return call_rpc_func(self, method, params, **kwargs)
 
+            do_print_calls = os.environ.get('AF_PRINT_SG_CALLS')
+
             try:
                 import getpass
                 import inspect
@@ -3077,6 +3079,7 @@ class Shotgun(object):
                 import psutil
                 import socket
                 import afpipe.influxdb
+                import traceback
 
             # machine doesn't support one of the modules we need for logging,
             # so just give up
@@ -3149,6 +3152,13 @@ class Shotgun(object):
                 tags['site'] = site
                 tags['module'] = module
 
+                if do_print_calls:
+                    print '\n'
+                    traceback.print_stack()
+                    print 'entity:', entity_type
+                    print 'filters:', filters
+                    print 'return fields:', return_fields
+
                 # TODO: Some fields aren't formatting properly for influx to
                 # accept them (like tractor title, filters, and return fields)
                 # ... figure out how to format these to get them logged
@@ -3165,13 +3175,12 @@ class Shotgun(object):
                     INFLUX.clear_entries()
 
                 except:
-                    print 'Failed to log database call.'
+                    pass
 
                 finally:
                     return call_rpc_func(self, method, params, **kwargs)
 
             except:
-                print 'Failed to log database call.'
                 return call_rpc_func(self, method, params, **kwargs)
 
         return _log_call
