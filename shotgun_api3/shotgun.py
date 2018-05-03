@@ -3074,10 +3074,7 @@ class Shotgun(object):
 
             try:
                 import getpass
-                import inspect
                 import json
-                import psutil
-                import socket
                 import afpipe.influxdb
                 import traceback
 
@@ -3097,7 +3094,6 @@ class Shotgun(object):
                 # certain types of API access (like 'info') don't have params,
                 # so only collect them if they exist
                 if params:
-
                     entity_type = params.get('type', 'unknown')
                     return_fields = params.get('return_fields', 'unknown')
                     filters = params.get('filters', 'unknown')
@@ -3106,16 +3102,6 @@ class Shotgun(object):
                     entity_type = 'unknown'
                     return_fields = 'unknown'
                     filters = 'unknown'
-
-                # if we can't get the process ID/name/host for some reason, just
-                # set them to unknown and log what we *can* get
-                try:
-                    process_id = os.getpid()
-                    process_name = psutil.Process(process_id).name()
-                    hostname = socket.gethostname()
-                except:
-                    process_id = 'unknown'
-                    process_name = 'unknown'
 
                 # same as above; skip these fields if we can't get them for
                 # some reason
@@ -3127,30 +3113,15 @@ class Shotgun(object):
                     tractor_jid = 'unknown'
 
                 try:
-                    site = os.environ.get('AF_SITE')
                     user = getpass.getuser()
                 except:
-                    site = 'unknown'
                     user = 'unknown'
-
-                # attempt to figure out which module is this call is
-                # originating from
-                try:
-                    outermost_frame = inspect.stack()[-1]
-                    module = inspect.getmodulename(outermost_frame[1])
-                except:
-                    module = 'unknown'
 
                 tags = {}
 
                 tags['user'] = user
                 tags['entity_type'] = entity_type
-                tags['host'] = hostname
-                tags['process_id'] = process_id
-                tags['process_name'] = process_name
                 tags['tractor_jid'] = tractor_jid
-                tags['site'] = site
-                tags['module'] = module
 
                 if do_print_calls:
                     print '\n'
