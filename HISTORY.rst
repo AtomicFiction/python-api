@@ -4,6 +4,38 @@ Shotgun Python API Changelog
 
 Here you can see the full list of changes between each Python API release.
 
+v3.0.39 (2019 February 20)
+=====================
+- Ensures the certificates packaged with the API and those specified via the `SHOTGUN_API_CACERTS` environment variable
+  are used when uploading a file.
+
+v3.0.39 (2019 February 7)
+=====================
+- Upgrades the version of ``httplib2`` to ``0.12.0``, which fixes SNI issues. Note this
+  version contains a more recent list of certificate authorities. If you are running Shotgun locally and have
+  signed your https certificate with an outdated certificate authority, the Shotgun connection will be rejected.
+
+v3.0.37 (2018 July 19)
+=====================
+
+- Proper support added for unicode and utf-8 string paths given to upload methods, and a sane error is raised when an unusable string encoding is used.
+- Adds support for querying preferences from Shotgun via the new preferences_read method.
+- Under-the-hood changes to add support for direct to s3 uploads to Shotgun. This change should be transparent to users.
+
+v3.0.36 (2018 April 3)
+=====================
+
+- Fixes an error where ``connect=False`` during ``__init__`` would still connect to Shotgun.
+- Adds support for ``SHOTGUN_API_CACERTS`` when uploading and downloading files.
+- Properly handles failed downloads due to malware scanning.
+
+v3.0.35 (2017 December 8)
+=====================
+
+- Add exception UserCredentialsNotAllowedForSSOAuthenticationFault.
+  Triggered when attempting to initiate a connection with a username/password
+  pair on an SSO-enabled Shotgun site.
+
 v3.0.34 (2017 September 18)
 =====================
 
